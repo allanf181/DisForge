@@ -62,11 +62,32 @@ public class DiscordEventListener extends ListenerAdapter {
                         ```""";
                 e.getChannel().sendMessage(help).queue();
             } else {
-                MutableComponent discord = Component.literal(DisForge.config.texts.coloredText.replace("%discordname%", Objects.requireNonNull(e.getMember()).getEffectiveName()).replace("%message%",e.getMessage().getContentDisplay().replace("§", DisForge.config.texts.removeVanillaFormattingFromDiscord ? "&" : "§").replace("\n", DisForge.config.texts.removeLineBreakFromDiscord ? " " : "\n") + ((!e.getMessage().getAttachments().isEmpty()) ? " <att>" : "") + ((!e.getMessage().getEmbeds().isEmpty()) ? " <embed>" : "")));
+                MutableComponent discord = Component.literal(applyPlaceholders(DisForge.config.texts.coloredText, e));
                 discord.setStyle(discord.getStyle().withColor(TextColor.fromRgb(Objects.requireNonNull(e.getMember()).getColorRaw())));
-                MutableComponent msg = Component.literal(DisForge.config.texts.colorlessText.replace("%discordname%", Objects.requireNonNull(e.getMember()).getEffectiveName()).replace("%message%", MarkdownParser.parseMarkdown(e.getMessage().getContentDisplay().replace("§", DisForge.config.texts.removeVanillaFormattingFromDiscord ? "&" : "§").replace("\n", DisForge.config.texts.removeLineBreakFromDiscord ? " " : "\n") + ((!e.getMessage().getAttachments().isEmpty()) ? " <att>" : "") + ((!e.getMessage().getEmbeds().isEmpty()) ? " <embed>" : ""))));
+                MutableComponent msg = Component.literal(applyPlaceholders(DisForge.config.texts.colorlessText, e));
                 msg.setStyle(msg.getStyle().withColor(TextColor.fromLegacyFormat(ChatFormatting.WHITE)));
-                server.getPlayerList().getPlayers().forEach(serverPlayerEntity -> serverPlayerEntity.displayClientMessage(Component.literal("").append(discord).append(msg),false));
+                if (e.getMessage().getReferencedMessage() != null){
+                    String user;
+                    if(e.getMessage().getReferencedMessage().getMember() != null){
+                        user = e.getMessage().getReferencedMessage().getMember().getEffectiveName();
+                    } else {
+                        user = e.getMessage().getReferencedMessage().getAuthor().getEffectiveName();
+                    }
+                    MutableComponent reply = Component.literal(DisForge.config.texts.replyText
+                            .replace("%discordname%", Utils.sanitize(user, true)));
+                    reply.setStyle(reply.getStyle().withColor(TextColor.fromLegacyFormat(ChatFormatting.GRAY)));
+                    server.getPlayerList().getPlayers().forEach(serverPlayerEntity ->
+                            serverPlayerEntity.displayClientMessage(Component.literal("")
+                                    .append(discord)
+                                    .append(reply)
+                                    .append(msg),false));
+                }
+                else {
+                    server.getPlayerList().getPlayers().forEach(serverPlayerEntity ->
+                            serverPlayerEntity.displayClientMessage(Component.literal("")
+                                    .append(discord)
+                                    .append(msg),false));
+                }
             }
         }
 
@@ -79,5 +100,12 @@ public class DiscordEventListener extends ListenerAdapter {
 
     private MinecraftServer getServer(){
         return ServerLifecycleHooks.getCurrentServer();
+    }
+
+    private static String applyPlaceholders(String text, MessageReceivedEvent e) {
+        return text.replace("%discordname%", Utils.sanitize(Objects.requireNonNull(e.getMember()).getEffectiveName(), true))
+                .replace("%message%", MarkdownParser.parseMarkdown(Utils.sanitize(e.getMessage().getContentDisplay(), false)
+                        + ((!e.getMessage().getAttachments().isEmpty()) ? " <att>" : "")
+                        + ((!e.getMessage().getEmbeds().isEmpty()) ? " <embed>" : "")));
     }
 }

@@ -1,7 +1,7 @@
 package one.armelin.disforge.listeners;
 
-import kong.unirest.Unirest;
-import kong.unirest.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.network.chat.Component;
@@ -14,11 +14,18 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.MediaType;
 import one.armelin.disforge.DisForge;
 import one.armelin.disforge.utils.MarkdownParser;
 import one.armelin.disforge.utils.Utils;
+import org.jetbrains.annotations.NotNull;
+
 
 public class MinecraftEventListener {
+
+    public static final MediaType JSON = MediaType.get("application/json");
 
     @SubscribeEvent
     public void onChatMessage(ServerChatEvent event) {
@@ -26,15 +33,14 @@ public class MinecraftEventListener {
             Tuple<String, String> convertedPair = Utils.convertMentionsFromNames(event.getRawText());
             ServerPlayer playerEntity = event.getPlayer();
             if (DisForge.config.isWebhookEnabled) {
-                JSONObject body = new JSONObject();
-                body.put("username", playerEntity.getScoreboardName());
-                body.put("avatar_url", "https://mc-heads.net/avatar/" + (DisForge.config.useUUIDInsteadNickname ? playerEntity.getUUID() : playerEntity.getScoreboardName()));
-                JSONObject allowed_mentions = new JSONObject();
-                allowed_mentions.put("parse", new String[]{"users", "roles"});
-                body.put("allowed_mentions", allowed_mentions);
-                body.put("content", convertedPair.getA());
+                String json = getWebhookJson(playerEntity, convertedPair);
+                RequestBody body = RequestBody.create(json, JSON);
+                Request request = new Request.Builder()
+                        .url(DisForge.config.webhookURL)
+                        .post(body)
+                        .build();
                 try {
-                    Unirest.post(DisForge.config.webhookURL).header("Content-Type", "application/json").body(body).asJsonAsync();
+                    DisForge.webhookClient.newCall(request).execute();
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -42,12 +48,27 @@ public class MinecraftEventListener {
                 DisForge.textChannel.sendMessage(DisForge.config.texts.playerMessage.replace("%playername%", MarkdownSanitizer.escape(playerEntity.getScoreboardName())).replace("%playermessage%", convertedPair.getA())).queue();
             }
             if (DisForge.config.modifyChatMessages) {
-                JSONObject newComponent = new JSONObject();
-                newComponent.put("text", MarkdownParser.parseMarkdown(convertedPair.getB()));
+                JsonObject newComponent = new JsonObject();
+                newComponent.addProperty("text", MarkdownParser.parseMarkdown(convertedPair.getB()));
                 Component finalText = Component.Serializer.fromJson(newComponent.toString());
                 event.setMessage(finalText);
             }
         }
+    }
+
+    @NotNull
+    private static String getWebhookJson(ServerPlayer playerEntity, Tuple<String, String> convertedPair) {
+        JsonObject body = new JsonObject();
+        body.addProperty("username", playerEntity.getScoreboardName());
+        body.addProperty("avatar_url", "https://mc-heads.net/avatar/" + (DisForge.config.useUUIDInsteadNickname ? playerEntity.getUUID() : playerEntity.getScoreboardName()));
+        JsonObject allowed_mentions = new JsonObject();
+        JsonArray parse = new JsonArray();
+        parse.add("users");
+        parse.add("roles");
+        allowed_mentions.add("parse", parse);
+        body.add("allowed_mentions", allowed_mentions);
+        body.addProperty("content", convertedPair.getA());
+        return body.toString();
     };
 
     @SubscribeEvent

@@ -1,12 +1,10 @@
 package one.armelin.disforge;
 
 import com.mojang.logging.LogUtils;
-import kong.unirest.Unirest;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.JanksonConfigSerializer;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.JDAInfo;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildMessageChannel;
 import net.dv8tion.jda.api.exceptions.InvalidTokenException;
@@ -38,6 +36,11 @@ public class DisForge {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static Configuration config;
     public static JDA jda;
+
+    public static OkHttpClient webhookClient = new OkHttpClient.Builder()
+            .protocols(Collections.singletonList(Protocol.HTTP_1_1))
+            .build();
+
     public static GuildMessageChannel textChannel;
     public static boolean stop = false;
 
@@ -51,9 +54,6 @@ public class DisForge {
     private void serverSetup(final FMLDedicatedServerSetupEvent event) {
         AutoConfig.register(Configuration.class, JanksonConfigSerializer::new);
         config = AutoConfig.getConfigHolder(Configuration.class).getConfig();
-        LOGGER.info("teste");
-        LOGGER.info(JDAInfo.VERSION);
-
         try {
             JDABuilder jdaBuilder = JDABuilder.createDefault(config.botToken).setHttpClient(new OkHttpClient.Builder()
                             .protocols(Collections.singletonList(Protocol.HTTP_1_1))
@@ -98,7 +98,8 @@ public class DisForge {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            Unirest.shutDown();
+            webhookClient.dispatcher().executorService().shutdown();
+            webhookClient.connectionPool().evictAll();
             DisForge.jda.shutdown();
             try {
                 Thread.sleep(250);

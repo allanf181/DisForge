@@ -60,4 +60,10 @@ public class Utils {
 
         return (double)l / (double)values.length;
     }
+
+    public static String sanitize(String text, boolean always) {
+        return text
+                .replace("§", (DisForge.config.texts.removeVanillaFormattingFromDiscord || always) ? "&" : "§")
+                .replace("\n", (DisForge.config.texts.removeLineBreakFromDiscord || always) ? " " : "\n");
+    }
 }

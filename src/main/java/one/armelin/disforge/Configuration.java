@@ -155,6 +155,14 @@ public class Configuration implements ConfigData {
         @ConfigEntry.Category(value = "Texts")
         public String colorlessText = "<%discordname%> %message%";
 
+        @Comment(value = """
+                Discord -> Minecraft
+                Replied message text, with gray color, goes before the colorless text, after colored text
+                Available placeholders:
+                %discordname% | Nickname of the replied user in the guild""")
+        @ConfigEntry.Category(value = "Texts")
+        public String replyText = "↪ %discordname%\n";
+
         @Comment(value = "Replaces the § symbol with & in any discord message to avoid formatted messages")
         @ConfigEntry.Category(value = "Texts")
         public Boolean removeVanillaFormattingFromDiscord = false;
