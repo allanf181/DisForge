@@ -6,6 +6,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+        classpath 'com.github.johnrengelman:shadow:8.1.1'
     }
 }
 
@@ -16,6 +17,7 @@ plugins {
 }
 
 apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 group = mod_version
 version = mod_group_id
@@ -138,6 +140,12 @@ repositories {
     // flatDir {
     //     dir 'libs'
     // }
+    maven { url "https://maven.shedaniel.me/" }
+}
+
+configurations {
+    embed
+    minecraftLibrary.extendsFrom(embed)
 }
 
 dependencies {
@@ -164,6 +172,18 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    compileOnly fg.deobf("me.shedaniel.cloth:cloth-config-forge:12.0.109")
+
+    embed("net.dv8tion:JDA:5.0.0-beta.15") {
+        exclude module: 'opus-java'
+    }
+
+    embed("com.konghq:unirest-java:3.13.4:standalone"){
+        exclude group: "com.google.code.gson", module: "gson"
+        exclude group: "org.apache.httpcomponents", module: "httpclient"
+        exclude group: "commons-logging", module: "commons-logging"
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
@@ -183,7 +203,8 @@ tasks.named('processResources', ProcessResources).configure {
 
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
-    }}
+    }
+}
 
 // Example for how to get properties into the manifest for reading at runtime.
 tasks.named('jar', Jar).configure {
@@ -201,6 +222,46 @@ tasks.named('jar', Jar).configure {
 
     // This is the preferred method to reobfuscate your jar file
     finalizedBy 'reobfJar'
+}
+
+shadowJar {
+    configurations = [project.configurations.embed]
+    relocate 'okhttp3', 'shaded.okhttp'
+    relocate 'okio', 'shaded.okio'
+    relocate 'gnu', 'shaded.gnu'
+    relocate 'javax.annotation', 'shaded.javax.annotation'
+    relocate 'net.dv8tion', 'shaded.net.dv8tion'
+    relocate 'org.apache', 'shaded.org.apache'
+    relocate 'org.intellij', 'shaded.org.intellij'
+    relocate 'org.jetbrains', 'shaded.org.jetbrains'
+    relocate 'org.json', 'shaded.org.json'
+    relocate 'com.neovisionaries', 'shaded.com.neovisionaries'
+    relocate 'com.mashape', 'shaded.com.mashape'
+    relocate 'com.iwebpp', 'shaded.com.iwebpp'
+    relocate 'com.fasterxml', 'shaded.com.fasterxml'
+    exclude 'module-info.class'
+    exclude 'dummyThing'
+    exclude 'mozilla/public-suffix-list.txt'
+    exclude 'kotlin/'
+    dependencies {
+        exclude(dependency{
+            it.moduleGroup == 'org.slf4j'
+        })
+    }
+    exclude { file ->
+        if (file.path.contains("META-INF/")) {
+            return !file.name.equals("mods.toml")
+        }
+        return false
+    }
+    finalizedBy 'reobfShadowJar'
+}
+
+assemble.dependsOn shadowJar
+
+
+reobf {
+    shadowJar {}
 }
 
 tasks.withType(JavaCompile).configureEach {

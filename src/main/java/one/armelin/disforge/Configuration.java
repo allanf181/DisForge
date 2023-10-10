@@ -1,64 +1,167 @@
 package one.armelin.disforge;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.registries.ForgeRegistries;
+import me.shedaniel.autoconfig.ConfigData;
+import me.shedaniel.autoconfig.annotation.Config;
+import me.shedaniel.autoconfig.annotation.ConfigEntry;
+import me.shedaniel.cloth.clothconfig.shadowed.blue.endless.jankson.Comment;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+@Config(name = DisForge.MODID)
+public class Configuration implements ConfigData {
+    @Comment(value = "Sets if DisFabric Should Modify In-Game Chat Messages")
+    @ConfigEntry.Category(value = "MinecraftChat")
+    public boolean modifyChatMessages = true;
 
-// An example config class. This is not required, but it's a good idea to have one to keep your config organized.
-// Demonstrates how to use Forge's config APIs
-@Mod.EventBusSubscriber(modid = DisForge.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
-public class Config
-{
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
+    @Comment(value = "Bot Token; see https://discordpy.readthedocs.io/en/latest/discord.html")
+    @ConfigEntry.Category(value = "Discord")
+    public String botToken = "";
 
-    private static final ForgeConfigSpec.BooleanValue LOG_DIRT_BLOCK = BUILDER
-            .comment("Whether to log the dirt block on common setup")
-            .define("logDirtBlock", true);
+    @Comment(value = "Bot Game Status; What will be displayed on the bot's game status (leave empty for nothing)")
+    @ConfigEntry.Category(value = "Discord")
+    public String botGameStatus = "";
 
-    private static final ForgeConfigSpec.IntValue MAGIC_NUMBER = BUILDER
-            .comment("A magic number")
-            .defineInRange("magicNumber", 42, 0, Integer.MAX_VALUE);
+    @Comment(value = "Enable Webhook; If enabled, player messages will be send using a webhook with the players name and head, instead of a regular message.")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean isWebhookEnabled = true;
 
-    public static final ForgeConfigSpec.ConfigValue<String> MAGIC_NUMBER_INTRODUCTION = BUILDER
-            .comment("What you want the introduction message to be for the magic number")
-            .define("magicNumberIntroduction", "The magic number is... ");
+    @Comment(value = "Webhook URL; see https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks")
+    @ConfigEntry.Category(value = "Discord")
+    public String webhookURL = "";
 
-    // a list of strings that are treated as resource locations for items
-    private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEM_STRINGS = BUILDER
-            .comment("A list of items to log on common setup.")
-            .defineListAllowEmpty("items", List.of("minecraft:iron_ingot"), Config::validateItemName);
+    @Comment(value = "Use UUID instead nickname to request player head on webhook")
+    @ConfigEntry.Category(value = "Discord")
+    public Boolean useUUIDInsteadNickname = true;
 
-    static final ForgeConfigSpec SPEC = BUILDER.build();
+    @Comment(value = """
+            Admins ids in Discord; see https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-
+            If more than one, enclose each id in quotation marks separated by commas, like this:
+            "adminsIds": [\s
+            \t\t"000",
+            \t\t"111",
+            \t\t"222"
+            \t]""")
+    @ConfigEntry.Category(value = "Discord")
+    public String[] adminsIds = {""};
 
-    public static boolean logDirtBlock;
-    public static int magicNumber;
-    public static String magicNumberIntroduction;
-    public static Set<Item> items;
+    @Comment(value = "Channel id in Discord")
+    @ConfigEntry.Category(value = "Discord")
+    public String channelId = "";
 
-    private static boolean validateItemName(final Object obj)
-    {
-        return obj instanceof final String itemName && ForgeRegistries.ITEMS.containsKey(new ResourceLocation(itemName));
-    }
+    @Comment(value = "If you enabled \"Server Members Intent\" in the bot's config page, change it to true. (This is only necessary if you want to enable discord mentions inside the game)")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean membersIntents = false;
 
-    @SubscribeEvent
-    static void onLoad(final ModConfigEvent event)
-    {
-        logDirtBlock = LOG_DIRT_BLOCK.get();
-        magicNumber = MAGIC_NUMBER.get();
-        magicNumberIntroduction = MAGIC_NUMBER_INTRODUCTION.get();
+    @Comment(value = "Should announce when a players join/leave the server?")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean announcePlayers = true;
 
-        // convert the list of strings into a set of items
-        items = ITEM_STRINGS.get().stream()
-                .map(itemName -> ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemName)))
-                .collect(Collectors.toSet());
+    @Comment(value = "Should announce when a players get an advancement?")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean announceAdvancements = true;
+
+    @Comment(value = "Should announce when a player die?")
+    @ConfigEntry.Category(value = "Discord")
+    public boolean announceDeaths = true;
+
+    public Texts texts = new Texts();
+
+    public static class Texts {
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Player chat message (Only used when Webhook is disabled)
+                Available placeholders:
+                %playername% | Player name
+                %playermessage% | Player message""")
+        @ConfigEntry.Category(value = "Texts")
+        public String playerMessage = "**%playername%:** %playermessage%";
+
+        @Comment(value = "Minecraft -> Discord\n"+
+                "Server started message")
+        @ConfigEntry.Category(value = "Texts")
+        public String serverStarted = "**Server started!**";
+
+        @Comment(value = "Minecraft -> Discord\n"+
+                "Server stopped message")
+        @ConfigEntry.Category(value = "Texts")
+        public String serverStopped = "**Server stopped!**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Join server
+                Available placeholders:
+                %playername% | Player name""")
+        @ConfigEntry.Category(value = "Texts")
+        public String joinServer = "**%playername% joined the game**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Left server
+                Available placeholders:
+                %playername% | Player name""")
+        @ConfigEntry.Category(value = "Texts")
+        public String leftServer = "**%playername% left the game**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Death message
+                Available placeholders:
+                %playername% | Player name
+                %deathmessage% | Death message""")
+        @ConfigEntry.Category(value = "Texts")
+        public String deathMessage = "**%deathmessage%**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Advancement type task message
+                Available placeholders:
+                %playername% | Player name
+                %advancement% | Advancement name""")
+        @ConfigEntry.Category(value = "Texts")
+        public String advancementTask = "%playername% has made the advancement **[%advancement%]**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Advancement type challenge message
+                Available placeholders:
+                %playername% | Player name
+                %advancement% | Advancement name""")
+        @ConfigEntry.Category(value = "Texts")
+        public String advancementChallenge = "%playername% has completed the challenge **[%advancement%]**";
+
+        @Comment(value = """
+                Minecraft -> Discord
+                Advancement type goal message
+                Available placeholders:
+                %playername% | Player name
+                %advancement% | Advancement name""")
+        @ConfigEntry.Category(value = "Texts")
+        public String advancementGoal = "%playername% has reached the goal **[%advancement%]**";
+
+        @Comment(value = """
+                Discord -> Minecraft
+                Colored part of the message, this part of the message will receive the same color as the role in the discord, comes before the colorless part
+                Available placeholders:
+                %discordname% | User nickname in the guild
+                %message% | The message""")
+        @ConfigEntry.Category(value = "Texts")
+        public String coloredText = "[Discord] ";
+
+        @Comment(value = """
+                Discord -> Minecraft
+                Colorless (white) part of the message, I think you already know what it is by the other comment
+                Available placeholders:
+                %discordname% | Nickname of the user in the guild
+                %message% | The message""")
+        @ConfigEntry.Category(value = "Texts")
+        public String colorlessText = "<%discordname%> %message%";
+
+        @Comment(value = "Replaces the § symbol with & in any discord message to avoid formatted messages")
+        @ConfigEntry.Category(value = "Texts")
+        public Boolean removeVanillaFormattingFromDiscord = false;
+
+        @Comment(value = "Removes line break from any discord message to avoid spam")
+        @ConfigEntry.Category(value = "Texts")
+        public Boolean removeLineBreakFromDiscord = false;
+
     }
 }
