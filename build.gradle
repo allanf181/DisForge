@@ -173,11 +173,12 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    compileOnly fg.deobf("me.shedaniel.cloth:cloth-config-forge:12.0.109")
+    minecraftLibrary fg.deobf("me.shedaniel.cloth:cloth-config-forge:12.0.109")
 
     embed("net.dv8tion:JDA:5.0.0-beta.15") {
         exclude module: 'opus-java'
         exclude group: 'org.slf4j'
+        exclude module: 'annotations'
     }
 }
 
@@ -221,20 +222,6 @@ tasks.named('jar', Jar).configure {
 
 shadowJar {
     configurations = [project.configurations.embed]
-//    relocate 'okhttp3', 'one.armelin.disforge.shaded.okhttp'
-//    relocate 'okio', 'one.armelin.disforge.shaded.okio'
-//    relocate 'gnu', 'one.armelin.disforge.shaded.gnu'
-//    relocate 'kotlin', 'one.armelin.disforge.shaded.kotlin'
-//    relocate 'javax.annotation', 'one.armelin.disforge.shaded.javax.annotation'
-//    relocate 'net.dv8tion', 'one.armelin.disforge.shaded.net.dv8tion'
-//    relocate 'org.apache', 'one.armelin.disforge.shaded.org.apache'
-//    relocate 'org.intellij', 'one.armelin.disforge.shaded.org.intellij'
-//    relocate 'org.jetbrains', 'one.armelin.disforge.shaded.org.jetbrains'
-//    relocate 'org.json', 'one.armelin.disforge.shaded.org.json'
-//    relocate 'com.neovisionaries', 'one.armelin.disforge.shaded.com.neovisionaries'
-//    relocate 'com.mashape', 'one.armelin.disforge.shaded.com.mashape'
-//    relocate 'com.iwebpp', 'one.armelin.disforge.shaded.com.iwebpp'
-//    relocate 'com.fasterxml', 'one.armelin.disforge.shaded.com.fasterxml'
     enableRelocation true
     relocationPrefix "one.armelin.disforge.shaded"
     exclude 'module-info.class'
